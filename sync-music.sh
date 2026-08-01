@@ -1,7 +1,10 @@
 #!/bin/bash
 
 SRC="/mnt/c/Users/nagaraj/Music/My FLACs/"
-DEST="root@pve1:/mnt/media/flacs/"
+DEST="root@homelab:/mnt/media/flacs/"
+
+#Change folder paths
+#sed -i 's#C:\\Users\\nagaraj\\Music\\My FLACs#/music#; s#\\#/#g' "/mnt/c/Users/nagaraj/Music/My FLACs/Playlists/"*.m3u
 
 echo "===== DRY RUN (Review changes) ====="
 rsync -rtvh --dry-run --size-only --itemize-changes --delete "$SRC" "$DEST" | grep -E "deleting|>f"

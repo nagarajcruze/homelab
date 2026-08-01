@@ -8,23 +8,31 @@
 # The compose file on main may not be compatible with the latest release.
 
 name: immich
-
 services:
   immich-server:
     container_name: immich_server
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - IMMICH_FFMPEG_ACCELERATION=quicksync
     # extends:
     #   file: hwaccel.transcoding.yml
     #   service: cpu # set to one of [nvenc, quicksync, rkmpp, vaapi, vaapi-wsl] for accelerated transcoding
     volumes:
       # Do not edit the next line. If you want to change the media storage location on your system, edit the value of UPLOAD_LOCATION in the .env file
-      - ${UPLOAD_LOCATION}:/data
+      #- ${UPLOAD_LOCATION}:/data
       - /etc/localtime:/etc/localtime:ro
-      - /mnt/usb:/mnt/usb:ro
+      - /twins/photos/library:/data/library
+      - /twins/photos/backups:/data/backups
+      - /docker-cache/immich/thumbs:/data/thumbs
+      - /docker-cache/immich/encoded-video:/data/encoded-video
+      - /opt/immich/upload:/data/upload
+      - /twins/photos/profile:/data/profile
     env_file:
       - .env
     ports:
-      - '2283:2283'
+      - 2283:2283
     depends_on:
       - redis
       - database
@@ -36,21 +44,14 @@ services:
     container_name: immich_machine_learning
     # For hardware acceleration, add one of -[armnn, cuda, rocm, openvino, rknn] to the image tag.
     # Example tag: ${IMMICH_VERSION:-release}-cuda
-    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-cuda
+    image: ghcr.io/immich-app/immich-machine-learning:${IMMICH_VERSION:-release}-openvino
     # extends: # uncomment this section for hardware acceleration - see https://docs.immich.app/features/ml-hardware-acceleration
     #   file: hwaccel.ml.yml
     #   service: cpu # set to one of [armnn, cuda, rocm, openvino, openvino-wsl, rknn] for accelerated inference - use the `-wsl` version for WSL2 where applicable
-    runtime: nvidia
+    devices:
+      - /dev/dri:/dev/dri
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,video
-      - CUDA_VISIBLE_DEVICES=0
-      - ONNXRUNTIME_ENABLE_AFFINITY=0
-      - OMP_NUM_THREADS=1
-      - KMP_AFFINITY=disabled
-      - OMP_PROC_BIND=false
-      - OPENBLAS_NUM_THREADS=2
-      - MACHINE_LEARNING_WORKERS=1
+      - IMMICH_MACHINE_LEARNING_DEVICE=GPU
     volumes:
       - model-cache:/cache
     env_file:
@@ -73,7 +74,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_DB: ${DB_DATABASE_NAME}
-      POSTGRES_INITDB_ARGS: '--data-checksums'
+      POSTGRES_INITDB_ARGS: --data-checksums
       # Uncomment the DB_STORAGE_TYPE: 'HDD' var if your database isn't stored on SSDs
       # DB_STORAGE_TYPE: 'HDD'
     volumes:
@@ -84,5 +85,37 @@ services:
     healthcheck:
       disable: false
 
+  immich-deduper:
+    container_name: immich-deduper
+    hostname: immich-deduper
+    image: ${DEDUP_IMAGE:-razgrizhsu/immich-deduper:latest}
+    restart: unless-stopped
+    ports:
+      - ${DEDUP_PORT:-8086}:${DEDUP_PORT:-8086}
+    volumes:
+      - ${DEDUP_DATA}:/app/data # deduper data
+      - ${DEDUP_DATA}/cache:/root/.cache/torch/ # model cache
+      - ${IMMICH_PATH}:/immich:ro # Read-only access to Immich photos
+      # Optional: for separate thumbnail directory (uncomment if using IMMICH_THUMB)
+      - ${IMMICH_THUMB}:/thumbs:ro
+    depends_on:
+      - qdrant
+    env_file:
+      - .env
+
+  qdrant:
+    container_name: immich-deduper-qdrant
+    image: qdrant/qdrant:v1.17.1
+    restart: unless-stopped
+    volumes:
+      - ${DEDUP_DATA}/qdrant:/qdrant/storage
+    env_file:
+      - .env
+
 volumes:
-  model-cache:
+  model-cache: null
+
+networks:
+  default:
+    external: true
+    name: homenet

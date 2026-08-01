@@ -1,0 +1,38 @@
+services:
+  joplin_db:
+    image: postgres:16
+    container_name: joplin_db
+    volumes:
+      - joplin_db:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=joplin
+      - POSTGRES_DB=joplin_db
+  app:
+    image: joplin/server:latest
+    container_name: joplin_server
+    depends_on:
+      - joplin_db
+    ports:
+      - 22300:22300
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime
+    environment:
+      - APP_PORT=22300
+      - APP_BASE_URL=http://homelab.tail257067.ts.net:22300
+      - DB_CLIENT=pg
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DATABASE=joplin_db
+      - POSTGRES_USER=joplin
+      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=joplin_db
+networks:
+  default:
+    external: true
+    name: homenet
+volumes:
+  joplin_db:
+    name: joplin_db

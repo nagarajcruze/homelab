@@ -1,0 +1,226 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: ProcessAlerts
+    folder: Infrastructure
+    interval: 1m
+    rules:
+      # 1. dockerd
+      - uid: process_dockerd_down
+        title: Process dockerd Down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: namedprocess_namegroup_num_procs{groupname="dockerd"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 1m
+        isPaused: false
+        annotations:
+          summary: "Docker daemon process (dockerd) is DOWN on {{ $labels.instance }}"
+          description: "The Docker daemon process (dockerd) has stopped running on {{ $labels.instance }}."
+        labels:
+          severity: critical
+
+      # 2. tailscaled
+      - uid: process_tailscaled_down
+        title: Process tailscaled Down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: namedprocess_namegroup_num_procs{groupname="tailscaled"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 1m
+        isPaused: false
+        annotations:
+          summary: "Tailscale daemon process (tailscaled) is DOWN on {{ $labels.instance }}"
+          description: "Tailscale mesh VPN daemon process (tailscaled) is not running on {{ $labels.instance }}."
+        labels:
+          severity: critical
+
+      # 3. sshd
+      - uid: process_sshd_down
+        title: Process sshd Down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: namedprocess_namegroup_num_procs{groupname="sshd"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 1m
+        isPaused: false
+        annotations:
+          summary: "SSH daemon process (sshd) is DOWN on {{ $labels.instance }}"
+          description: "OpenSSH daemon (sshd) is not running on {{ $labels.instance }}. SSH remote access may be offline."
+        labels:
+          severity: critical
+
+      # 4. zfs_exporter
+      - uid: process_zfs_exporter_down
+        title: Process zfs_exporter Down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: namedprocess_namegroup_num_procs{groupname=~"zfs_exporter|zfs-exporter"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: Alerting
+        execErrState: Error
+        for: 1m
+        isPaused: false
+        annotations:
+          summary: "ZFS Exporter process (zfs_exporter) is DOWN on {{ $labels.instance }}"
+          description: "ZFS Exporter binary process (zfs_exporter) is not running on {{ $labels.instance }}."
+        labels:
+          severity: critical

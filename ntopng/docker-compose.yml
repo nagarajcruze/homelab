@@ -1,0 +1,36 @@
+services:
+  redis:
+    image: redis:7
+    container_name: ntopng-redis
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=Asia/Kolkata
+    volumes:
+      - redis_data:/data
+  ntopng:
+    image: ntop/ntopng:latest
+    container_name: ntopng
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=Asia/Kolkata
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ntopng_data:/var/lib/ntopng
+      - ./ntopng_conf:/etc/ntopng
+      - /etc/localtime:/etc/localtime
+    command:
+      - -i
+      - eno1 # Replace with your actual interface name
+      - -w
+      - "3001" # Web UI port
+      - --community # Use community edition
+      - --redis
+      - 127.0.0.1:6379
+volumes:
+  ntopng_data: null
+  redis_data: null
+networks: {}

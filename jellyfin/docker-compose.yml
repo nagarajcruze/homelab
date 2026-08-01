@@ -2,15 +2,24 @@ services:
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
-    network_mode: host
-    runtime: nvidia
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=video,utility,compute
+    ports:
+      - 8096:8096
+    user: 911:911
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44" # video (usually)
+      - "992" # render
     volumes:
+      - /dev/shm:/cache/transcodes
       - /opt/jellyfin/config:/config
-      - /opt/jellyfin/cache:/cache
-      - /mnt/media/movies:/movies
-      - /mnt/media/flacs:/flacs
+      - /docker-cache/jellyfin/trickplay:/config/data/trickplay
+      - /docker-cache/jellyfin/cache:/cache
+      - /mnt/tank/movies:/movies
+      - /mnt/tank/movies-4k:/movies-4k
       - /etc/localtime:/etc/localtime
-    restart: 'unless-stopped'
+    restart: unless-stopped
+networks:
+  default:
+    external: true
+    name: homenet
