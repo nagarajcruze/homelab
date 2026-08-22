@@ -4,16 +4,13 @@
   ===================================================================
 */}}
 
-{{/* Helper: Severity / Status Emoji */}}
-{{ define "homelab.emoji" }}
-{{- if eq .Status "firing" -}}
-  {{- if eq .Labels.severity "critical" -}}🔴 
-  {{- else if eq .Labels.severity "warning" -}}⚠️ 
-  {{- else -}}ℹ️ 
-  {{- end -}}
-{{- else -}}✅ 
+{{/* Severity emoji only; avoids duplicate ✅ inside resolved sections */}}
+{{ define "homelab.emoji" -}}
+{{- if eq .Labels.severity "critical" -}}🔴
+{{- else if eq .Labels.severity "warning" -}}⚠️
+{{- else -}}ℹ️
 {{- end -}}
-{{ end }}
+{{- end }}
 
 {{/* Title Template */}}
 {{ define "homelab.title" }}
@@ -23,61 +20,27 @@
 {{- end }}
 
 {{/* Single Alert Formatting */}}
-{{ define "__homelab_alert_entry" }}
-{{ template "homelab.emoji" . }} **{{ .Annotations.summary }}**
-{{ if .Annotations.description }}
-> {{ .Annotations.description }}
-{{ end }}
-• **Severity:** `{{ if .Labels.severity }}{{ .Labels.severity | toUpper }}{{ else }}UNKNOWN{{ end }}`
-{{- if .Labels.instance }} | **Host:** `{{ .Labels.instance }}`{{ end }}
-{{- if .Labels.device }} | **Device:** `{{ .Labels.device }}`{{ end }}
-{{- if .Labels.mountpoint }} | **Mount:** `{{ .Labels.mountpoint }}`{{ end }}
-{{- if .Labels.name }} | **Container:** `{{ .Labels.name }}`{{ end }}
-{{- if .Labels.groupname }} | **Process:** `{{ .Labels.groupname }}`{{ end }}
-{{- if .ValueString }}
-• **Value:** `{{ .ValueString }}`
-{{- end }}
-{{ if .SilenceURL }}🔗 [Silence]({{ .SilenceURL }}){{ end }}{{ if .DashboardURL }} | 📊 [Dashboard]({{ .DashboardURL }}){{ end }}
+{{ define "__homelab_alert_entry" -}}
+{{ template "homelab.emoji" . }} {{ .Annotations.summary }}
+{{ if .Annotations.description -}}{{ .Annotations.description }}
+{{ end -}}
 {{ end }}
 
 {{/* Main Message Body */}}
-{{ define "default.message" }}
-{{ if gt (len .Alerts.Firing) 0 }}
-🔥 **Alerts Firing ({{ .Alerts.Firing | len }}):**
-{{ range .Alerts.Firing }}
----
+{{ define "short.message" -}}
+{{ if gt (len .Alerts.Firing) 0 -}}
+{{ range .Alerts.Firing -}}
 {{ template "__homelab_alert_entry" . }}
-{{ end }}
-{{ end }}
-
-{{ if gt (len .Alerts.Resolved) 0 }}
-{{ if gt (len .Alerts.Firing) 0 }}
-
-{{ end }}
-✅ **Alerts Resolved ({{ .Alerts.Resolved | len }}):**
-{{ range .Alerts.Resolved }}
----
+{{ end -}}
+{{ end -}}
+{{ if gt (len .Alerts.Resolved) 0 -}}
+{{ range .Alerts.Resolved -}}
 {{ template "__homelab_alert_entry" . }}
-{{ end }}
-{{ end }}
+{{ end -}}
+{{ end -}}
 {{ end }}
 
 {{/* Default Title */}}
-{{ define "default.title" }}{{ template "homelab.title" . }}{{ end }}
-
-{{/* Platform Receivers Overrides */}}
-{{ define "discord.default.title" }}{{ template "default.title" . }}{{ end }}
-{{ define "discord.default.message" }}{{ template "default.message" . }}{{ end }}
-
-{{ define "telegram.default.message" }}{{ template "default.message" . }}{{ end }}
-
-{{ define "slack.default.title" }}{{ template "default.title" . }}{{ end }}
-{{ define "slack.default.text" }}{{ template "default.message" . }}{{ end }}
-
-{{ define "msteams.default.title" }}{{ template "default.title" . }}{{ end }}
-{{ define "msteams.default.text" }}{{ template "default.message" . }}{{ end }}
-
-{{ define "pushover.default.title" }}{{ template "default.title" . }}{{ end }}
-{{ define "pushover.default.message" }}{{ template "default.message" . }}{{ end }}
+{{ define "short.title" }}{{ template "homelab.title" . }}{{ end }}
 
 {{ define "webhook.default.payload.state" }}{{ if eq .Status "resolved" }}ok{{ else }}alerting{{ end }}{{ end }}

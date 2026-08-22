@@ -8,15 +8,13 @@ LOG_FILE="/var/log/homelab_backup.log"
 BACKUP_ROOT="/root/homelab_svc_backups"
 ADD_BACKUP="/twins/homelab_svc_backups"
 RAW_DIR="$BACKUP_ROOT/raw/$DATE"
-ENC_DIR="$BACKUP_ROOT/encrypted"
 SNAPSHOT_DIR="/.snapshots"
-SNAPSHOT_RETENTION_DAYS=7
-PASSWORD="${BACKUP_PASS:-}"
 
-### ===== LOCK =====
-# LOCK_FILE="/var/run/homelab_backup.lock"
-# exec 200>"$LOCK_FILE"
-# flock -n 200 || { echo "Another backup is running"; exit 1; }
+# ==== Borg Local Backup ======
+BACKUP_PATH="/mnt/speed"
+
+### ===== Borg Remote Backup ======
+BORG_REPO="${BORG_REMOTE:-}"
 
 ### ===== SERVICES =====
 declare -A SERVICES=(
@@ -24,7 +22,6 @@ declare -A SERVICES=(
   ["prowlarr"]="/opt/radarr/prwlrconfig/Backups/manual/"
   ["bazarr"]="/opt/radarr/bazarr/backup/"
   ["jellyfin"]="/opt/jellyfin/config/data/backups/"
-  ["immich"]="/twins/photos/backups/"
   ["navidrome"]="/opt/navidrome/data/backup/"
 )
 
@@ -43,10 +40,10 @@ cleanup_on_failure() {
 trap cleanup_on_failure ERR
 
 ### ===== VALIDATION =====
-# if [ -z "$PASSWORD" ]; then
-#   log "ERROR" "BACKUP_PASS not set"
-#   exit 1
-# fi
+if [ -z "$BORG_REPO" ]; then
+  log "ERROR" "BORG_REPO not set"
+  exit 1
+fi
 
 ### ===== RETENTION (7 DAYS) =====
 find /opt/radarr/bazarr/backup/ -name "bazarr*" -type f -mtime +7 -delete
@@ -65,11 +62,8 @@ if [ "$AVAILABLE_MB" -lt "$REQUIRED_MB" ]; then
   log "ERROR" "Not enough disk space: ${AVAILABLE_MB}MB available, ${REQUIRED_MB}MB required"
   exit 1
 fi
-mkdir -p "$RAW_DIR" "$ENC_DIR" "$SNAPSHOT_DIR"
+mkdir -p "$RAW_DIR"
 log "INFO" "Backup started"
-
-### ===== FIND PREVIOUS BACKUP FOR HARDLINK DEDUP =====
-LATEST_RAW=$(ls -1d "$BACKUP_ROOT/raw"/????-??-??_* 2>/dev/null | sort | tail -1 || true)
 
 ### ===== COPY SERVICE BACKUPS (with hardlink dedup) =====
 for SERVICE in "${!SERVICES[@]}"; do
@@ -90,35 +84,51 @@ done
 mkdir -p "$RAW_DIR/compose-files"
 (cd /opt && find . -type f \( -name "*compose.yml" -o -name "prometheus.yml" \) -exec cp --parents {} "$RAW_DIR/compose-files/" \; 2>/dev/null) || true
 
-## Copy grafana dashboards
-cp /opt/promfana/grafana/dashboard* "$RAW_DIR" 2>/dev/null || true
+## Copy grafana dashboards ## Pushed to Github
+# cp /opt/promfana/grafana/dashboard* "$RAW_DIR" 2>/dev/null || true
 
 ### ===== COMPRESS =====
 ARCHIVE="$BACKUP_ROOT/backup_$DATE.tar.zst"
 log "INFO" "Creating archive"
 tar --zstd -cf "$ARCHIVE" -C "$BACKUP_ROOT/raw" "$DATE" >> "$LOG_FILE" 2>&1
 cp "$ARCHIVE" "$ADD_BACKUP/" >> "$LOG_FILE" 2>&1
-### ===== ENCRYPT (password via fd, not CLI arg) =====
-# ENC_FILE="$ENC_DIR/backup_$DATE.tar.zst.enc"
-# log "INFO" "Encrypting archive"
-# openssl enc -aes-256-cbc -pbkdf2 -salt \
-#   -in "$ARCHIVE" \
-#   -out "$ENC_FILE" \
-#   -pass fd:3 3<<< "$PASSWORD" >> "$LOG_FILE" 2>&1
-# ### ===== VERIFY ARCHIVE =====
-# log "INFO" "Verifying encrypted archive"
-# openssl enc -d -aes-256-cbc -pbkdf2 \
-#   -in "$ENC_FILE" \
-#   -pass fd:3 3<<< "$PASSWORD" 2>/dev/null | tar --zstd -tf - > /dev/null 2>&1
-# log "INFO" "Archive verification passed"
+
+### ===== immich db backup =====
+log "INFO" "Dumping Immich PostgreSQL database"
+mkdir -p /twins/photos/immichdb-backup
+docker exec immich_postgres pg_dumpall --clean --if-exists --username=postgres > /twins/photos/immichdb-backup/immich-database.sql
+
+### ===== Borg Backup =====
+log "INFO" "Starting Borg backup for Immich"
+borg create --stats "$BACKUP_PATH/immich-borg::{now}" /twins/photos/library /twins/photos/profile /opt/immich/upload /twins/photos/immichdb-backup/immich-database.sql >> "$LOG_FILE" 2>&1
+
+### ===== Borg Prune =====
+log "INFO" "Pruning Borg repository"
+borg prune --keep-weekly=4 --keep-monthly=5 "$BACKUP_PATH"/immich-borg >> "$LOG_FILE" 2>&1
+
+### ===== Borg Compact =====
+log "INFO" "Compacting Borg repository"
+borg compact "$BACKUP_PATH"/immich-borg >> "$LOG_FILE" 2>&1
+
+### ===== Borg Remote =====
+log "INFO" "Starting Remote Borg backup"
+borg create --stats --compression zstd,3 "$BORG_REPO"::'homelab-{now}' "$RAW_DIR/" >> "$LOG_FILE" 2>&1
+
+### ===== Borg Prune =====
+log "INFO" "Pruning Remote Borg repository"
+borg prune --glob-archives 'homelab-*' --keep-weekly=4 --keep-monthly=5 "$BORG_REPO" >> "$LOG_FILE" 2>&1
+
+### ===== Borg Compact =====
+log "INFO" "Compacting Remote Borg repository"
+borg compact "$BORG_REPO" >> "$LOG_FILE" 2>&1
 
 ### ===== CLEAN TEMP ARCHIVE =====
 # rm -f "$ARCHIVE"
 
 ### ===== RETENTION (30 DAYS) =====
-log "INFO" "Applying retention policy (>30 days)"
+log "INFO" "Applying retention policy to raw folder (>30 days)"
 find "$BACKUP_ROOT/raw" -mindepth 1 -maxdepth 1 -mtime +30 -exec rm -rf {} \; >> "$LOG_FILE" 2>&1
-find "$ENC_DIR" -type f -mtime +30 -delete >> "$LOG_FILE" 2>&1
+
 ### ===== DONE =====
 log "INFO" "Backup completed successfully: $ARCHIVE"
 
