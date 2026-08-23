@@ -117,7 +117,7 @@ cp /twins/photos/immichdb-backup/immich-database.sql "$STAGING_DIR/immich-db/imm
 
 ### ===== 1. LOCAL BORG BACKUP (HOMELAB SERVICES ON /twins) =====
 log "INFO" "Starting Local Borg backup for homelab services to $LOCAL_HOMELAB_BORG_REPO"
-borg create --stats --compression zstd,6 "$LOCAL_HOMELAB_BORG_REPO"::'homelab-{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
+borg create --stats --compression zstd,6 "$LOCAL_HOMELAB_BORG_REPO"::'{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
 
 log "INFO" "Pruning Local Services Borg repository"
 borg prune --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$LOCAL_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
@@ -127,7 +127,7 @@ borg compact "$LOCAL_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
 
 ### ===== 2. REMOTE BORG BACKUP (HOMELAB SERVICES On BorgBase) =====
 log "INFO" "Starting Remote Borg backup for Homelab Services"
-borg create --stats --compression zstd,6 "$REMOTE_HOMELAB_BORG_REPO"::'homelab-{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
+borg create --stats --compression zstd,6 "$REMOTE_HOMELAB_BORG_REPO"::'{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
 
 log "INFO" "Pruning Remote Borg repository"
 borg prune --glob-archives 'homelab-*' --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$REMOTE_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
@@ -146,7 +146,7 @@ log "INFO" "Compacting Immich Borg repository"
 borg compact "$IMMICH_BACKUP_PATH" >> "$LOG_FILE" 2>&1
 
 ### ===== DONE =====
-log "INFO" "Backup completed successfully"
+log "COMPLETED" "Backup completed successfully"
 
 ### Ping healthchecks.io after successful backup
 curl -m 10 --retry 5 https://hc-ping.com/
