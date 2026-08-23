@@ -109,39 +109,41 @@ done
 mkdir -p "$STAGING_DIR/compose-files"
 (cd /opt && find . -type f \( -name "*compose.yml" -o -name "prometheus.yml" \) -exec cp --parents {} "$STAGING_DIR/compose-files/" \; 2>/dev/null) || true
 
+### ===== IMMICH DB DUMP (FOR IMMICH & HOMELAB REPOS) =====
+log "INFO" "Dumping Immich PostgreSQL database"
+mkdir -p /twins/photos/immichdb-backup "$STAGING_DIR/immich-db"
+docker exec immich_postgres pg_dumpall --clean --if-exists --username=postgres > /twins/photos/immichdb-backup/immich-database.sql
+cp /twins/photos/immichdb-backup/immich-database.sql "$STAGING_DIR/immich-db/immich-database.sql"
+
 ### ===== 1. LOCAL BORG BACKUP (HOMELAB SERVICES ON /twins) =====
 log "INFO" "Starting Local Borg backup for homelab services to $LOCAL_HOMELAB_BORG_REPO"
-borg create --stats --compression zstd,3 "$LOCAL_HOMELAB_BORG_REPO"::'homelab-{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
+borg create --stats --compression zstd,6 "$LOCAL_HOMELAB_BORG_REPO"::'homelab-{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
 
 log "INFO" "Pruning Local Services Borg repository"
-borg prune --keep-daily=14 --keep-weekly=8 --keep-monthly=12 --keep-yearly=1 "$LOCAL_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
+borg prune --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$LOCAL_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
 
 log "INFO" "Compacting Local Services Borg repository"
 borg compact "$LOCAL_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
 
-### ===== 2. IMMICH DB & BORG BACKUP =====
-log "INFO" "Dumping Immich PostgreSQL database"
-mkdir -p /twins/photos/immichdb-backup
-docker exec immich_postgres pg_dumpall --clean --if-exists --username=postgres > /twins/photos/immichdb-backup/immich-database.sql
+### ===== 2. REMOTE BORG BACKUP (HOMELAB SERVICES On BorgBase) =====
+log "INFO" "Starting Remote Borg backup for Homelab Services"
+borg create --stats --compression zstd,6 "$REMOTE_HOMELAB_BORG_REPO"::'homelab-{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
 
+log "INFO" "Pruning Remote Borg repository"
+borg prune --glob-archives 'homelab-*' --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$REMOTE_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
+
+log "INFO" "Compacting Remote Borg repository"
+borg compact "$REMOTE_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
+
+### ===== 3. IMMICH DB & BORG BACKUP =====
 log "INFO" "Starting Borg backup for Immich"
 borg create --stats "$IMMICH_BACKUP_PATH::{now}" /twins/photos/library /twins/photos/profile /opt/immich/upload /twins/photos/immichdb-backup/immich-database.sql >> "$LOG_FILE" 2>&1
 
 log "INFO" "Pruning Immich Borg repository"
-borg prune --keep-weekly=4 --keep-monthly=5 "$IMMICH_BACKUP_PATH" >> "$LOG_FILE" 2>&1
+borg prune --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$IMMICH_BACKUP_PATH" >> "$LOG_FILE" 2>&1
 
 log "INFO" "Compacting Immich Borg repository"
 borg compact "$IMMICH_BACKUP_PATH" >> "$LOG_FILE" 2>&1
-
-### ===== 3. REMOTE BORG BACKUP =====
-log "INFO" "Starting Remote Borg backup"
-borg create --stats --compression zstd,3 "$REMOTE_HOMELAB_BORG_REPO"::'homelab-{now}' "$STAGING_DIR/" >> "$LOG_FILE" 2>&1
-
-log "INFO" "Pruning Remote Borg repository"
-borg prune --glob-archives 'homelab-*' --keep-weekly=4 --keep-monthly=5 "$REMOTE_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
-
-log "INFO" "Compacting Remote Borg repository"
-borg compact "$REMOTE_HOMELAB_BORG_REPO" >> "$LOG_FILE" 2>&1
 
 ### ===== DONE =====
 log "INFO" "Backup completed successfully"
