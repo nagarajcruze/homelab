@@ -8,7 +8,7 @@ flock -n 200 || { echo "$(date '+%F %T') [ERROR] Another snapshot-opt job is alr
 
 ### ===== CONFIG =====
 SNAPSHOT_DIR="/.snapshots"
-RETENTION_DAYS=7
+RETENTION_DAYS=30
 LOG_FILE="/var/log/snapshot_opt.log"
 
 ### ===== REDIRECT ALL OUTPUT TO BOTH TERMINAL AND LOG FILE =====
