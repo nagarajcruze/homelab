@@ -63,7 +63,7 @@ declare -A SERVICES=(
 
 ### ===== LOG FUNCTION =====
 log() {
-  echo "$(date '+%F %T') [$1] $2"
+  echo "$(date '+%F %T') [$1] ${2:-}"
 }
 
 ### ===== TIMING HELPER =====
@@ -85,6 +85,10 @@ cleanup() {
   fi
 }
 trap cleanup EXIT
+
+log "===================================================================================================="
+log "Starting Homelab Services Backup Script..."
+log "===================================================================================================="
 
 ### ===== VALIDATION =====
 if [ -z "$REMOTE_HOMELAB_BORG_REPO" ]; then
@@ -212,11 +216,11 @@ log "INFO" "Compacting Local Borg backup for Immich"
 borg compact "$IMMICH_BACKUP_PATH"
 
 ### ===== DONE =====
-log "COMPLETED" "Backup completed successfully"
+log "Backup completed successfully"
 
 ### Ping after successful backup
 if [ -n "$HEALTHCHECK_URL" ]; then
-  curl -m 10 --retry 5 "$HEALTHCHECK_URL" || true
+  curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
 else
   log "WARN" "HEALTHCHECK_URL not set. Skipping healthcheck ping."
 fi
