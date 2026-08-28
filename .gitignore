@@ -21,3 +21,6 @@ arr/bazarr/config/
 
 # Track bash scripts
 !*.sh
+
+# Ignore ps_exporter config
+ps_exporter/config.yml 
