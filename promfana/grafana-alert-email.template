@@ -1,0 +1,46 @@
+{{/* 
+  ===================================================================
+  Homelab Enhanced Grafana Alert Notification Template
+  ===================================================================
+*/}}
+
+{{/* Severity emoji only; avoids duplicate ✅ inside resolved sections */}}
+{{ define "homelab.emoji" -}}
+{{- if eq .Labels.severity "critical" -}}🔴
+{{- else if eq .Labels.severity "warning" -}}⚠️
+{{- else -}}ℹ️
+{{- end -}}
+{{- end }}
+
+{{/* Title Template */}}
+{{ define "homelab.title" }}
+{{- if eq .Status "firing" }}🚨 [FIRING:{{ .Alerts.Firing | len }}]
+{{- else }}✅ [RESOLVED:{{ .Alerts.Resolved | len }}]
+{{- end }} {{ .GroupLabels.SortedPairs.Values | join " " }}
+{{- end }}
+
+{{/* Single Alert Formatting */}}
+{{ define "__homelab_alert_entry" -}}
+{{ template "homelab.emoji" . }} {{ .Annotations.summary }}
+{{ if .Annotations.description -}}{{ .Annotations.description }}
+{{ end -}}
+{{ end }}
+
+{{/* Main Message Body */}}
+{{ define "short.message" -}}
+{{ if gt (len .Alerts.Firing) 0 -}}
+{{ range .Alerts.Firing -}}
+{{ template "__homelab_alert_entry" . }}
+{{ end -}}
+{{ end -}}
+{{ if gt (len .Alerts.Resolved) 0 -}}
+{{ range .Alerts.Resolved -}}
+{{ template "__homelab_alert_entry" . }}
+{{ end -}}
+{{ end -}}
+{{ end }}
+
+{{/* Default Title */}}
+{{ define "short.title" }}{{ template "homelab.title" . }}{{ end }}
+
+{{ define "webhook.default.payload.state" }}{{ if eq .Status "resolved" }}ok{{ else }}alerting{{ end }}{{ end }}

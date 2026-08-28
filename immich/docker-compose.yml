@@ -39,6 +39,7 @@ services:
     restart: always
     healthcheck:
       disable: false
+
   immich-machine-learning:
     container_name: immich_machine_learning
     # For hardware acceleration, add one of -[armnn, cuda, rocm, openvino, rknn] to the image tag.
@@ -58,12 +59,14 @@ services:
     restart: always
     healthcheck:
       disable: false
+
   redis:
     container_name: immich_redis
     image: docker.io/valkey/valkey:9@sha256:3eeb09785cd61ec8e3be35f8804c8892080f3ca21934d628abc24ee4ed1698f6
     healthcheck:
       test: redis-cli ping || exit 1
     restart: always
+
   database:
     container_name: immich_postgres
     image: ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0@sha256:bcf63357191b76a916ae5eb93464d65c07511da41e3bf7a8416db519b40b1c23
@@ -81,6 +84,7 @@ services:
     restart: always
     healthcheck:
       disable: false
+
   immich-deduper:
     container_name: immich-deduper
     hostname: immich-deduper
@@ -99,6 +103,7 @@ services:
       - qdrant
     env_file:
       - .env
+
   qdrant:
     container_name: immich-deduper-qdrant
     image: qdrant/qdrant:v1.17.1
@@ -107,9 +112,12 @@ services:
       - ${DEDUP_DATA}/qdrant:/qdrant/storage
     env_file:
       - .env
+
 volumes:
   model-cache: null
+
 networks:
   default:
     external: true
     name: homenet
+>>>>>>> origin/main

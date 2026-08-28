@@ -215,12 +215,12 @@ borg prune --list --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$IMMICH_BAC
 log "INFO" "Compacting Local Borg backup for Immich"
 borg compact "$IMMICH_BACKUP_PATH"
 
-### ===== DONE =====
-log "Backup completed successfully"
-
 ### Ping after successful backup
 if [ -n "$HEALTHCHECK_URL" ]; then
-  curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
+    curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
 else
-  log "WARN" "HEALTHCHECK_URL not set. Skipping healthcheck ping."
+    log "WARN" "HEALTHCHECK_URL not set. Skipping healthcheck ping."
 fi
+
+### ===== DONE =====
+log "Backup completed successfully"

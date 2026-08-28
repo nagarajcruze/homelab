@@ -1,0 +1,281 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: ZFSAlerts
+    folder: Infrastructure
+    interval: 1m
+    rules:
+      # 1. Pool health
+      - uid: zfs_pool_health_status
+        title: ZFS Pool Unhealthy / Degraded
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: zfs_pool_health{pool=~".*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: ne
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "ZFS Pool {{ $labels.pool }} is UNHEALTHY on {{ $labels.instance }}"
+          description: "ZFS pool {{ $labels.pool }} status is not ONLINE (health state value: {{ $values.A.Value }})."
+        labels:
+          severity: critical
+
+      # 2. Readonly
+      - uid: zfs_pool_readonly_status
+        title: ZFS Pool / Dataset Read-Only Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: zfs_pool_readonly{pool=~".*"} or zfs_dataset_readonly{dataset=~".*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "ZFS target is read-only on {{ $labels.instance }}"
+          description: "ZFS pool/dataset {{ $labels.pool }}{{ $labels.dataset }} has entered read-only mode!"
+        labels:
+          severity: critical
+
+      # 3. Pool >80%
+      - uid: zfs_pool_capacity_80
+        title: ZFS Pool Space Warning (>80%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: (zfs_pool_allocated_bytes / zfs_pool_size_bytes) * 100 or (zfs_pool_capacity_ratio * 100)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 80
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "ZFS Pool {{ $labels.pool }} space warning on {{ $labels.instance }}"
+          description: "ZFS pool {{ $labels.pool }} capacity utilization is above 80% (current: {{ $values.A.Value }}%). High ZFS fragmentation risk above 80%."
+        labels:
+          severity: warning
+
+      # 4. Pool >90%
+      - uid: zfs_pool_capacity_90
+        title: ZFS Pool Space Critical (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: (zfs_pool_allocated_bytes / zfs_pool_size_bytes) * 100 or (zfs_pool_capacity_ratio * 100)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: ZFS Pool {{ $labels.pool }} space low on {{ $labels.instance }}"
+          description: "ZFS pool {{ $labels.pool }} capacity utilization is above 90% (current: {{ $values.A.Value }}%). Urgent cleanup required."
+        labels:
+          severity: critical
+
+      # 5. Dataset free space
+      - uid: zfs_dataset_free_space_low
+        title: ZFS Dataset Low Free Space (<10%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (zfs_dataset_available_bytes / (zfs_dataset_available_bytes + zfs_dataset_used_bytes))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 10
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "ZFS Dataset {{ $labels.dataset }} low free space on {{ $labels.instance }}"
+          description: "ZFS dataset {{ $labels.dataset }} available free space has dropped below 10% (current free: {{ $values.A.Value }}%)."
+        labels:
+          severity: warning

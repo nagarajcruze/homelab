@@ -15,7 +15,7 @@
 *.env
 .env
 
-# Ignore Radarr's internal config
+# Ignore arr's internal config
 arr/prwlrconfig/
 arr/bazarr/config/
 

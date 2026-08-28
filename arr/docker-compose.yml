@@ -6,8 +6,6 @@ services:
       - PUID=911
       - PGID=911
       - TZ=Asia/Kolkata
-    env_file:
-      - .env
     volumes:
       - /etc/localtime:/etc/localtime
       - ./rdrconfig:/config
@@ -23,8 +21,6 @@ services:
       - PUID=911
       - PGID=911
       - TZ=Asia/Kolkata
-    env_file:
-      - .env
     volumes:
       - /etc/localtime:/etc/localtime
       - ./prwlrconfig:/config
@@ -47,8 +43,6 @@ services:
       - PUID=911
       - PGID=911
       - TZ=Asia/Kolkata
-    env_file:
-      - .env
     volumes:
       - ./bazarr:/config
       - /mnt/tank/movies:/movies

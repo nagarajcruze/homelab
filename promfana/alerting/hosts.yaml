@@ -1,0 +1,501 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: SystemAlerts
+    folder: Infrastructure
+    interval: 1m
+    rules:
+      # 1. CPU > 90%
+      - uid: sys_cpu_90_perc
+        title: CPU Usage High (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "High CPU usage detected on {{ $labels.instance }}"
+          description: "CPU usage is above 90% (current value: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      # 2. RAM > 90%
+      - uid: sys_ram_90_perc
+        title: RAM Usage High (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "High RAM usage on {{ $labels.instance }}"
+          description: "Memory usage is above 90% (current value: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      # 3. Swap > 80%
+      - uid: sys_swap_80_perc
+        title: Swap Usage High (>80%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 80
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "High Swap usage on {{ $labels.instance }}"
+          description: "Swap memory usage is above 80% (current value: {{ $values.A.Value }}%)"
+        labels:
+          severity: warning
+
+      # 4. Load Average
+      - uid: sys_load_avg_hi
+        title: High System Load Average per CPU Core
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: node_load5 / count by (instance, job) (node_cpu_seconds_total{mode="idle"})
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1.5
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "High Load Average on {{ $labels.instance }}"
+          description: "5-minute load average per CPU core is above 1.5 (current load/core: {{ $values.A.Value }})"
+        labels:
+          severity: warning
+
+      # 5. Root FS > 85%
+      - uid: sys_root_fs_85
+        title: Root Filesystem Usage Warning (>85%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 85
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Root Filesystem warning on {{ $labels.instance }}"
+          description: "Root disk space utilization is above 85% (current value: {{ $values.A.Value }}%)"
+        labels:
+          severity: warning
+
+      # 6. Root FS > 95%
+      - uid: sys_root_fs_95
+        title: Root Filesystem Usage Critical (>95%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: Root Filesystem usage on {{ $labels.instance }}"
+          description: "Root disk space utilization is above 95% (current value: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      # 7. Read-only filesystem
+      - uid: sys_readonly_fs
+        title: Read-only Filesystem Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: node_filesystem_readonly{fstype!~"tmpfs|overlay|squashfs"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "Read-only filesystem detected on {{ $labels.instance }}"
+          description: "Mountpoint {{ $labels.mountpoint }} has gone into read-only mode!"
+        labels:
+          severity: critical
+
+      # 11. High disk IO
+      - uid: sys_disk_io_hi
+        title: High Disk IO Utilization (>80%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: rate(node_disk_io_time_seconds_total[5m]) * 100
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 80
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "High Disk I/O utilization on {{ $labels.instance }} (device {{ $labels.device }})"
+          description: "Disk I/O utilization is above 80% (current value: {{ $values.A.Value }}%)"
+        labels:
+          severity: warning
+
+      # 12. Network down
+      - uid: sys_net_down
+        title: Network Interface Down
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: node_network_carrier{device!~"lo|docker.*|veth.*|br-.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "Network interface link down on {{ $labels.instance }}"
+          description: "Network carrier signal lost for interface {{ $labels.device }} on {{ $labels.instance }}."
+        labels:
+          severity: critical

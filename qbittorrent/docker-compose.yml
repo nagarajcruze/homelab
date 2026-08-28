@@ -8,8 +8,6 @@ services:
       - TORRENTING_PORT=6881
       - PUID=911
       - PGID=911
-    env_file:
-      - .env
     volumes:
       - ./config:/config
       - /downloads/:/downloads

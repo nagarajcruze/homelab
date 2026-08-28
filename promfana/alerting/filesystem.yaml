@@ -1,0 +1,774 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: FilesystemAlerts
+    folder: Infrastructure
+    interval: 1m
+    rules:
+      # ==========================================
+      # 1. Mountpoint: / (Root)
+      # ==========================================
+      - uid: fs_root_space_warning
+        title: Filesystem / Space Warning (>85%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 85
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Filesystem / space warning on {{ $labels.instance }}"
+          description: "Disk usage on mountpoint / is above 85% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: warning
+
+      - uid: fs_root_space_critical
+        title: Filesystem / Space Critical (>95%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: Filesystem / disk full warning on {{ $labels.instance }}"
+          description: "Disk usage on mountpoint / is above 95% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      - uid: fs_root_inode_exhaustion
+        title: Filesystem / Inode Exhaustion (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_files_free{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{mountpoint="/",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Inode exhaustion on / for {{ $labels.instance }}"
+          description: "Inode utilization on mountpoint / is above 90% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      - uid: fs_root_readonly
+        title: Filesystem / Read-only Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: node_filesystem_readonly{mountpoint="/"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "Filesystem / is read-only on {{ $labels.instance }}"
+          description: "Root mountpoint / on {{ $labels.instance }} has been remounted read-only!"
+        labels:
+          severity: critical
+
+      # ==========================================
+      # 3. Mountpoint: /mnt/media
+      # ==========================================
+      - uid: fs_media_space_warning
+        title: Filesystem /mnt/media Space Warning (>85%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/mnt/media",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/mnt/media",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 85
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Filesystem /mnt/media space warning on {{ $labels.instance }}"
+          description: "Disk usage on mountpoint /mnt/media is above 85% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: warning
+
+      - uid: fs_media_space_critical
+        title: Filesystem /mnt/media Space Critical (>95%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/mnt/media",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/mnt/media",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: Filesystem /mnt/media disk full warning on {{ $labels.instance }}"
+          description: "Disk usage on mountpoint /mnt/media is above 95% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      - uid: fs_media_inode_exhaustion
+        title: Filesystem /mnt/media Inode Exhaustion (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_files_free{mountpoint="/mnt/media",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{mountpoint="/mnt/media",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Inode exhaustion on /mnt/media for {{ $labels.instance }}"
+          description: "Inode utilization on mountpoint /mnt/media is above 90% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      - uid: fs_media_readonly
+        title: Filesystem /mnt/media Read-only Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: node_filesystem_readonly{mountpoint="/mnt/media"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "Filesystem /mnt/media is read-only on {{ $labels.instance }}"
+          description: "Mountpoint /mnt/media on {{ $labels.instance }} has been remounted read-only!"
+        labels:
+          severity: critical
+
+      # ==========================================
+      # 4. Mountpoint: /mnt/media2
+      # ==========================================
+      - uid: fs_media2_space_warning
+        title: Filesystem /mnt/media2 Space Warning (>85%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/mnt/media2",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/mnt/media2",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 85
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Filesystem /mnt/media2 space warning on {{ $labels.instance }}"
+          description: "Disk usage on mountpoint /mnt/media2 is above 85% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: warning
+
+      - uid: fs_media2_space_critical
+        title: Filesystem /mnt/media2 Space Critical (>95%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_avail_bytes{mountpoint="/mnt/media2",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_size_bytes{mountpoint="/mnt/media2",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 95
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: Filesystem /mnt/media2 disk full warning on {{ $labels.instance }}"
+          description: "Disk usage on mountpoint /mnt/media2 is above 95% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      - uid: fs_media2_inode_exhaustion
+        title: Filesystem /mnt/media2 Inode Exhaustion (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: 100 * (1 - (node_filesystem_files_free{mountpoint="/mnt/media2",fstype!~"tmpfs|overlay|squashfs"} / node_filesystem_files{mountpoint="/mnt/media2",fstype!~"tmpfs|overlay|squashfs"}))
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "Inode exhaustion on /mnt/media2 for {{ $labels.instance }}"
+          description: "Inode utilization on mountpoint /mnt/media2 is above 90% (current: {{ $values.A.Value }}%)"
+        labels:
+          severity: critical
+
+      - uid: fs_media2_readonly
+        title: Filesystem /mnt/media2 Read-only Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: node_filesystem_readonly{mountpoint="/mnt/media2"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "Filesystem /mnt/media2 is read-only on {{ $labels.instance }}"
+          description: "Mountpoint /mnt/media2 on {{ $labels.instance }} has been remounted read-only!"
+        labels:
+          severity: critical
+
+      # ==========================================
+      # 5. Btrfs & IO Health
+      # ==========================================
+      - uid: btrfs_device_errors
+        title: Btrfs Device Errors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: increase(node_btrfs_device_errors_total[5m])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "Btrfs device errors on {{ $labels.instance }}"
+          description: "Btrfs has detected {{ $values.A.Value }} errors (type: {{ $labels.error_type }}) on device {{ $labels.device }}. Check for data corruption!"
+        labels:
+          severity: critical
+
+      - uid: disk_io_stalls
+        title: Prolonged Disk IO Stalls Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: rate(node_disk_io_time_seconds_total[15m])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0.99
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 15m
+        isPaused: false
+        annotations:
+          summary: "Disk IO stalling on {{ $labels.instance }} (device {{ $labels.device }})"
+          description: "Device {{ $labels.device }} has been at near 100% IO utilization continuously for 15+ minutes, indicating a potential storage subsystem hang."
+        labels:
+          severity: warning
