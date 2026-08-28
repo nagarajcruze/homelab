@@ -7,7 +7,6 @@
 # Track compose files
 !*.yml
 !*.yaml
-!*.template
 
 # Track this file
 !.gitignore
@@ -19,3 +18,6 @@
 # Ignore arr's internal config
 arr/prwlrconfig/
 arr/bazarr/config/
+
+# Track bash scripts
+!*.sh
