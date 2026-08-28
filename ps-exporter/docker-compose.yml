@@ -3,6 +3,8 @@ services:
     image: ncabatoff/process-exporter:latest
     container_name: process-exporter
     restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
     ports:
       - 9256:9256
     pid: host

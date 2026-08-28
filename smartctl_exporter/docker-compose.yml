@@ -3,6 +3,8 @@ services:
     image: prometheuscommunity/smartctl-exporter:latest
     container_name: smartctl-exporter
     restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
     user: root
     ports:
       - 9633:9633

@@ -21,11 +21,12 @@ services:
       ND_TRANSCODINGCACHESIZE: 20GB
       ND_BACKUP_PATH: /backup
       ND_BACKUP_SCHEDULE: 0 0 * * 0
-      ND_BACKUP_COUNT: 7
+      ND_BACKUP_COUNT: 1
       ND_PLUGINS_ENABLED: true
       ND_PLUGINS_AUTORELOAD: true
-      ND_AGENTS: audiomuseai,lastfm,spotify,deezer
       ND_DEVARTISTINFOTIMETOLIVE: 1s
+      ND_AGENTS: lastfm,deezer
+      ND_LISTENBRAINZ_ENABLED: false
 networks:
   default:
     external: true

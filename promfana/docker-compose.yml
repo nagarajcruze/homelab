@@ -4,6 +4,10 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
     ports:
       - 9090:9090
     volumes:
@@ -17,16 +21,9 @@ services:
     container_name: grafana
     restart: unless-stopped
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin@123
-      - GF_SMTP_ENABLED=true
-      - GF_SMTP_HOST=smtp.gmail.com:587
-      - GF_SMTP_USER=email@gmail.com
-      - GF_SMTP_PASSWORD=xyxyx
-      - GF_SMTP_FROM_ADDRESS=email@gmail.com
-      - GF_SMTP_FROM_NAME=Homelab Grafana
-      - GF_SMTP_SKIP_VERIFY=false
-      - GF_SMTP_STARTTLS_POLICY=MandatoryStartTLS
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
     ports:
       - 3000:3000
     volumes:
@@ -36,6 +33,10 @@ services:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     restart: unless-stopped
+    environment:
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
     ports:
       - 8080:8080
     privileged: true

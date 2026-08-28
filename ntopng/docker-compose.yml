@@ -3,18 +3,18 @@ services:
     image: redis:7
     container_name: ntopng-redis
     restart: unless-stopped
-    network_mode: host
     environment:
       - TZ=Asia/Kolkata
+    network_mode: host
     volumes:
       - redis_data:/data
   ntopng:
     image: ntop/ntopng:latest
     container_name: ntopng
     restart: unless-stopped
-    network_mode: host
     environment:
       - TZ=Asia/Kolkata
+    network_mode: host
     cap_add:
       - NET_ADMIN
       - NET_RAW

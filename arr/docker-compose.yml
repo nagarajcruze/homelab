@@ -5,11 +5,12 @@ services:
     environment:
       - PUID=911
       - PGID=911
+      - TZ=Asia/Kolkata
     volumes:
       - /etc/localtime:/etc/localtime
       - ./rdrconfig:/config
-      - /mnt/tank/movies:/movies #optional
-      - /downloads:/downloads #optional
+      - /mnt/tank/movies:/movies
+      - /downloads:/downloads
     ports:
       - 7878:7878
     restart: unless-stopped
@@ -19,6 +20,7 @@ services:
     environment:
       - PUID=911
       - PGID=911
+      - TZ=Asia/Kolkata
     volumes:
       - /etc/localtime:/etc/localtime
       - ./prwlrconfig:/config
@@ -29,7 +31,7 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
     environment:
-      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_LEVEL=info
       - BROWSER_TIMEOUT=120000
     ports:
       - 8191:8191
@@ -38,14 +40,30 @@ services:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     environment:
-      - PUID=911# Change to your user ID (e.g., 1000)
-      - PGID=911# Change to your group ID
-      - TZ=Asia/Kolkata # Change to your Timezone (e.g., Asia/Kolkata)
+      - PUID=911
+      - PGID=911
+      - TZ=Asia/Kolkata
     volumes:
       - ./bazarr:/config
-      - /mnt/tank/movies:/movies # Must match Radarr's movie path exactly
+      - /mnt/tank/movies:/movies
     ports:
       - 6767:6767
+    restart: unless-stopped
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=911
+      - PGID=911
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
+    volumes:
+      - ./sonarr/config:/config
+      - /mnt/tank/series:/series #optional
+      - /downloads:/downloads #optional
+    ports:
+      - 8989:8989
     restart: unless-stopped
 networks:
   default:

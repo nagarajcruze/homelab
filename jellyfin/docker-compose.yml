@@ -16,7 +16,7 @@ services:
       - /docker-cache/jellyfin/trickplay:/config/data/trickplay
       - /docker-cache/jellyfin/cache:/cache
       - /mnt/tank/movies:/movies
-      - /mnt/tank/movies-4k:/movies-4k
+      - /mnt/tank/series:/series
       - /etc/localtime:/etc/localtime
     restart: unless-stopped
 networks:

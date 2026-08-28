@@ -88,7 +88,7 @@ services:
   immich-deduper:
     container_name: immich-deduper
     hostname: immich-deduper
-    image: ${DEDUP_IMAGE:-razgrizhsu/immich-deduper:latest}
+    image: immich-deduper:v12 #${DEDUP_IMAGE:-razgrizhsu/immich-deduper:latest}
     restart: unless-stopped
     ports:
       - ${DEDUP_PORT:-8086}:${DEDUP_PORT:-8086}
@@ -98,6 +98,7 @@ services:
       - ${IMMICH_PATH}:/immich:ro # Read-only access to Immich photos
       # Optional: for separate thumbnail directory (uncomment if using IMMICH_THUMB)
       - ${IMMICH_THUMB}:/thumbs:ro
+      - /docker-cache/immich/encoded-video:/immich/encoded-video:ro
     depends_on:
       - qdrant
     env_file:

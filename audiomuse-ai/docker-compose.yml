@@ -6,7 +6,7 @@ services:
     container_name: audiomuse-redis
     volumes:
       - redis-data:/data # Persistent storage for Redis data
-    restart: unless-stopped
+    restart: always
   # PostgreSQL database service
   audiomuse-postgres:
     image: postgres:15-alpine
@@ -17,7 +17,7 @@ services:
       POSTGRES_DB: audiomusedb
     volumes:
       - postgres-data:/var/lib/postgresql/data # Persistent storage for PostgreSQL data
-    restart: unless-stopped
+    restart: always
   # AudioMuse-AI Flask application service
   audiomuse-ai-flask:
     image: ghcr.io/neptunehub/audiomuse-ai:latest # Reflects deployment.yaml
@@ -61,7 +61,7 @@ services:
     depends_on:
       - audiomuse-redis
       - audiomuse-postgres
-    restart: unless-stopped
+    restart: on-failure:3
 # Define volumes for persistent data and temporary files
 volumes:
   redis-data: null
