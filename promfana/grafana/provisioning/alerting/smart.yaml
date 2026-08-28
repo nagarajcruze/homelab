@@ -1,0 +1,1051 @@
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: SMARTAlerts
+    folder: Infrastructure
+    interval: 1m
+    rules:
+      # 1. SMART Failed
+      - uid: smart_status_failed
+        title: SMART Device Status Failed
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_smart_status or smartctl_device_status
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: eq
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART status FAILED on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Device {{ $labels.device }} on {{ $labels.instance }} has reported SMART status FAILED! Drive replacement recommended."
+        labels:
+          severity: critical
+
+      # 2. HDD >45°C
+      - uid: smart_hdd_temp_warning
+        title: HDD Temperature Warning (>45°C)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_temperature{device=~"sd.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 45
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "HDD {{ $labels.device }} temperature warning ({{ $values.A.Value }}°C) on {{ $labels.instance }}"
+          description: "HDD drive {{ $labels.device }} temperature has exceeded 45°C."
+        labels:
+          severity: warning
+
+      # 3. HDD >50°C
+      - uid: smart_hdd_temp_critical
+        title: HDD Temperature Critical (>50°C)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_temperature{device=~"sd.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 50
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: HDD {{ $labels.device }} high temperature ({{ $values.A.Value }}°C) on {{ $labels.instance }}"
+          description: "HDD drive {{ $labels.device }} temperature is above 50°C. Immediate airflow/cooling action needed."
+        labels:
+          severity: critical
+
+      # 4. NVMe >60°C
+      - uid: smart_nvme_temp_warning
+        title: NVMe Temperature Warning (>60°C)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_temperature{device=~"nvme.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 60
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "NVMe {{ $labels.device }} temperature warning ({{ $values.A.Value }}°C) on {{ $labels.instance }}"
+          description: "NVMe drive {{ $labels.device }} temperature has exceeded 60°C."
+        labels:
+          severity: warning
+
+      # 5. NVMe >70°C
+      - uid: smart_nvme_temp_critical
+        title: NVMe Temperature Critical (>70°C)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_temperature{device=~"nvme.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 70
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: NVMe {{ $labels.device }} high temperature ({{ $values.A.Value }}°C) on {{ $labels.instance }}"
+          description: "NVMe drive {{ $labels.device }} temperature is above 70°C. Throttling or damage risk!"
+        labels:
+          severity: critical
+
+      # 6. NVMe wear >70%
+      - uid: smart_nvme_wear_70
+        title: NVMe Wear Warning (>70%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_percentage_used{device=~"nvme.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 70
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 5m
+        isPaused: false
+        annotations:
+          summary: "NVMe {{ $labels.device }} wear warning ({{ $values.A.Value }}%) on {{ $labels.instance }}"
+          description: "NVMe drive {{ $labels.device }} endurance usage has passed 70%."
+        labels:
+          severity: warning
+
+      # 7. NVMe wear >90%
+      - uid: smart_nvme_wear_90
+        title: NVMe Wear Critical (>90%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_percentage_used{device=~"nvme.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 90
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 2m
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: NVMe {{ $labels.device }} high wear ({{ $values.A.Value }}%) on {{ $labels.instance }}"
+          description: "NVMe drive {{ $labels.device }} endurance usage has passed 90%. Plan drive replacement soon!"
+        labels:
+          severity: critical
+
+      # 8. Available spare
+      - uid: smart_nvme_available_spare
+        title: NVMe Available Spare Low (<10%)
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_available_spare{device=~"nvme.*"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 10
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: NVMe {{ $labels.device }} available spare low ({{ $values.A.Value }}%) on {{ $labels.instance }}"
+          description: "NVMe {{ $labels.device }} available spare capacity has dropped below 10%."
+        labels:
+          severity: critical
+
+      # 9. Media errors
+      - uid: smart_nvme_media_errors
+        title: NVMe Media Errors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: increase(smartctl_device_media_errors[5m])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: NVMe {{ $labels.device }} media errors detected on {{ $labels.instance }}"
+          description: "NVMe drive {{ $labels.device }} has reported new media/data integrity errors ({{ $values.A.Value }})."
+        labels:
+          severity: critical
+
+      # 10. Error log increase
+      - uid: smart_nvme_error_log_increase
+        title: NVMe Error Log Increase
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: increase(smartctl_device_error_log_count[5m])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "NVMe {{ $labels.device }} error log entries increasing on {{ $labels.instance }}"
+          description: "NVMe drive {{ $labels.device }} error log entry count increased by {{ $values.A.Value }}."
+        labels:
+          severity: warning
+
+      # 11. Reallocated sectors
+      - uid: smart_reallocated_sectors
+        title: SMART Reallocated Sectors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_attribute{attribute_id="5", attribute_value_type="raw"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART reallocated sectors on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} has {{ $values.A.Value }} reallocated sectors (ID 5). Drive degradation starting."
+        labels:
+          severity: warning
+
+      # 12. CRC errors
+      - uid: smart_crc_errors
+        title: SMART UDMA CRC Errors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_attribute{attribute_id="199", attribute_value_type="raw"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART CRC errors on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} reported {{ $values.A.Value }} UDMA CRC errors (ID 199). Check SATA cabling/controller connection."
+        labels:
+          severity: warning
+
+      # 13. Pending sectors
+      - uid: smart_pending_sectors
+        title: SMART Current Pending Sectors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_attribute{attribute_id="197", attribute_value_type="raw"} or smartctl_device_attribute{attribute_name=~".*Pending_Sector.*", attribute_value_type="raw"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: SMART pending sectors on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} has {{ $values.A.Value }} current pending sectors (ID 197). High risk of uncorrectable read errors!"
+        labels:
+          severity: critical
+
+      # 14. Offline uncorrectable
+      - uid: smart_offline_uncorrectable
+        title: SMART Offline Uncorrectable Sectors Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_attribute{attribute_id="198", attribute_value_type="raw"} or smartctl_device_attribute{attribute_name=~".*Offline_Uncorrectable.*", attribute_value_type="raw"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: SMART offline uncorrectable sectors on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} has {{ $values.A.Value }} offline uncorrectable sectors (ID 198)."
+        labels:
+          severity: critical
+
+      # 15. G-Sense increase
+      - uid: smart_gsense_increase
+        title: SMART G-Sense Error Rate Increase
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: increase(smartctl_device_attribute{attribute_id="191", attribute_value_type="raw"}[1h])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART G-Sense shock errors increasing on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} G-Sense shock error rate (ID 191) increased by {{ $values.A.Value }} in the last hour. Excessive vibration detected."
+        labels:
+          severity: warning
+
+      # 16. Load cycle increase
+      - uid: smart_load_cycle_increase
+        title: SMART Load Cycle Count High Increase
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: increase(smartctl_device_attribute{attribute_id="193", attribute_value_type="raw"}[1h])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 100
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART head parking/load cycles spiking on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} load cycle count (ID 193) increased by {{ $values.A.Value }} in 1h. Check APM/head parking settings."
+        labels:
+          severity: warning
+
+      # 17. Power-off retracts
+      - uid: smart_power_off_retracts
+        title: SMART Power-Off Retract Count Increase
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: increase(smartctl_device_attribute{attribute_id="192", attribute_value_type="raw"}[1h])
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART power-off retracts on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} emergency power-off retract count (ID 192) increased by {{ $values.A.Value }}."
+        labels:
+          severity: warning
+
+      # 18. Spin retry
+      - uid: smart_spin_retry
+        title: SMART Spin Retry Count Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_attribute{attribute_id="10", attribute_value_type="raw"} or smartctl_device_attribute{attribute_name=~".*Spin_Retry.*", attribute_value_type="raw"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "CRITICAL: SMART spin retry count on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} reported spin retries (ID 10: {{ $values.A.Value }}). Motor/spindle failure imminent!"
+        labels:
+          severity: critical
+
+      # 19. Seek errors
+      - uid: smart_seek_errors
+        title: SMART Seek Error Rate Detected
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: ffiut0kiqonpcd
+            model:
+              editorMode: code
+              expr: smartctl_device_attribute{attribute_id="7", attribute_value_type="raw"} or smartctl_device_attribute{attribute_name=~".*Seek_Error.*", attribute_value_type="raw"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+          - refId: C
+            queryType: expression
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 0
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - A
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+        noDataState: OK
+        execErrState: Error
+        for: 0s
+        isPaused: false
+        annotations:
+          summary: "SMART seek errors on {{ $labels.device }} ({{ $labels.instance }})"
+          description: "Drive {{ $labels.device }} reported seek error rate (ID 7: {{ $values.A.Value }})."
+        labels:
+          severity: warning

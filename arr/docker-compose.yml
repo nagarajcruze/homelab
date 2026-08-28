@@ -1,0 +1,77 @@
+services:
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PUID=911
+      - PGID=911
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - ./rdrconfig:/config
+      - /mnt/tank/movies:/movies
+      - /downloads:/downloads
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    environment:
+      - PUID=911
+      - PGID=911
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
+    volumes:
+      - /etc/localtime:/etc/localtime
+      - ./prwlrconfig:/config
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=info
+      - BROWSER_TIMEOUT=120000
+    ports:
+      - 8191:8191
+    restart: unless-stopped
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=911
+      - PGID=911
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
+    volumes:
+      - ./bazarr:/config
+      - /mnt/tank/movies:/movies
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PUID=911
+      - PGID=911
+      - TZ=Asia/Kolkata
+    env_file:
+      - .env
+    volumes:
+      - ./sonarr/config:/config
+      - /mnt/tank/series:/series #optional
+      - /downloads:/downloads #optional
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+networks:
+  default:
+    external: true
+    name: homenet

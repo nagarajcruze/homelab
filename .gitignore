@@ -1,0 +1,23 @@
+# Ignore everything by default
+*
+
+# Allow directories
+!*/
+
+# Track compose files
+!*.yml
+!*.yaml
+
+# Track this file
+!.gitignore
+
+# Explicitly ignore sensitive files
+*.env
+.env
+
+# Ignore Radarr's internal config
+arr/prwlrconfig/
+arr/bazarr/config/
+
+# Track bash scripts
+!*.sh

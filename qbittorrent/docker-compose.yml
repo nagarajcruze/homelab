@@ -1,0 +1,24 @@
+services:
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - TZ=Asia/Kolkata
+      - WEBUI_PORT=6880
+      - TORRENTING_PORT=6881
+      - PUID=911
+      - PGID=911
+    env_file:
+      - .env
+    volumes:
+      - ./config:/config
+      - /downloads/:/downloads
+    ports:
+      - 6880:6880
+      - 6881:6881
+      - 6881:6881/udp
+    restart: unless-stopped
+networks:
+  default:
+    external: true
+    name: homenet
