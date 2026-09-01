@@ -16,6 +16,7 @@ STAGING_DIR="$(mktemp -d /tmp/homelab_borg_backup.XXXXXX)"
 
 # ==== Immich Local Borg Backup ======
 IMMICH_BACKUP_PATH="/mnt/speed/immich-borg"
+IMMICH_THUMBNAILS_PATH="/docker-cache/immich/thumbs"
 
 ### ===== Borg Remote Backup ======
 REMOTE_HOMELAB_BORG_REPO="${REMOTE_HOMELAB_BORG_REPO:-}"
@@ -25,10 +26,10 @@ HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
 
 ### ===== SERVICES =====
 declare -A SERVICES=(
-  ["radarr"]="/opt/radarr/rdrconfig/Backups/scheduled/"
-  ["prowlarr"]="/opt/radarr/prwlrconfig/Backups/scheduled/"
-  ["bazarr"]="/opt/radarr/bazarr/backup/"
-  ["sonarr"]="/opt/radarr/sonarr/config/Backups/scheduled/"
+  ["radarr"]="/opt/arr/rdrconfig/Backups/scheduled/"
+  ["prowlarr"]="/opt/arr/prwlrconfig/Backups/scheduled/"
+  ["bazarr"]="/opt/arr/bazarr/backup/"
+  ["sonarr"]="/opt/arr/sonarr/config/Backups/scheduled/"
   ["jellyfin"]="/opt/jellyfin/config/data/backups/"
   ["navidrome"]="/opt/navidrome/data/backup/"
 )
@@ -60,6 +61,19 @@ declare -A SERVICES=(
 # # OR extract only a specific folder (e.g., jellyfin or compose-files):
 # borg extract --list /twins/homelab_borg_backup::<ARCHIVE_NAME> jellyfin
 
+# Quarterly restore drill:
+# 1. Provision a clean test host with Docker and the same Immich version.
+# 2. Extract an archive into an empty directory:
+#      borg extract --list "$IMMICH_BACKUP_PATH"::<ARCHIVE_NAME>
+# 3. Restore the gzip SQL dump (this script uses pg_dumpall, not pg_restore):
+#      gzip -dc twins/photos/immichdb-backup/immich-database.sql.gz | docker exec -i immich_postgres psql --username=postgres
+# 4. Verify the database:
+#      docker exec immich_postgres psql --username=postgres --dbname=immich -c 'SELECT COUNT(*) FROM asset;'
+# 5. Restore originals, profile, uploads, and thumbnails to their compose mount paths.
+#      For thumbnails: rsync -a docker-cache/immich/thumbs/ /docker-cache/immich/thumbs/
+# 6. Start Immich, browse the library, search, and download an original; then check logs.
+# 7. Restore another service backup from the same archive and verify it starts cleanly.
+# 8. Record elapsed time and any issues.
 
 ### ===== LOG FUNCTION =====
 log() {
@@ -98,6 +112,11 @@ fi
 
 if [ -z "$HEALTHCHECK_URL" ]; then
   log "ERROR" "HEALTHCHECK_URL not set"
+  exit 1
+fi
+
+if [ ! -d "$IMMICH_THUMBNAILS_PATH" ]; then
+  log "ERROR" "Immich thumbnails path not found: $IMMICH_THUMBNAILS_PATH"
   exit 1
 fi
 
@@ -206,7 +225,7 @@ fi
 ### ===== 3. IMMICH DB & BORG BACKUP =====
 log "INFO" "Starting Local Borg backup for Immich to $IMMICH_BACKUP_PATH"
 t=$(timer_start)
-borg create --stats "$IMMICH_BACKUP_PATH::{now}" /twins/photos/library /twins/photos/profile /opt/immich/upload /twins/photos/immichdb-backup/immich-database.sql.gz
+borg create --stats "$IMMICH_BACKUP_PATH::{now}" /twins/photos/library /twins/photos/profile /opt/immich/upload /twins/photos/immichdb-backup/immich-database.sql.gz "$IMMICH_THUMBNAILS_PATH"
 log "INFO" "Local Borg backup for Immich completed in $(timer_elapsed "$t")"
 
 log "INFO" "Pruning Local Borg backup for Immich"
