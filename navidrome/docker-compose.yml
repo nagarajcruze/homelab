@@ -10,7 +10,9 @@ services:
       - ./data:/data
       - ./data/backup:/backup
       - /docker-cache/navidrome/cache:/data/cache
+      - /docker-cache/navidrome/artwork:/data/artwork
       - /mnt/tank/flacs:/music:ro
+      - /etc/localtime:/etc/localtime
     environment:
       # Optional: put your config options customization here. Examples:
       ND_SCANSCHEDULE: 1h
@@ -26,8 +28,7 @@ services:
       ND_PLUGINS_AUTORELOAD: true
       ND_DEVARTISTINFOTIMETOLIVE: 1s
       ND_AGENTS: lastfm,deezer
-      ND_LISTENBRAINZ_ENABLED: false
 networks:
   default:
     external: true
-    name: homeneb
+    name: homenet
