@@ -7,7 +7,7 @@ groups:
     rules:
       # 1. SMART Failed
       - uid: smart_status_failed
-        title: SMART Device Status Failed
+        title: SMART Device Status Failedo
         condition: C
         data:
           - refId: A
@@ -60,9 +60,9 @@ groups:
         labels:
           severity: critical
 
-      # 2. HDD >45°C
-      - uid: smart_hdd_temp_warning
-        title: HDD Temperature Warning (>45°C)
+      # 2. HDD >55°C
+      - uid: smart_hdd_temp_critical
+        title: HDD Temperature Critical (>55°C)
         condition: C
         data:
           - refId: A
@@ -86,7 +86,7 @@ groups:
               conditions:
                 - evaluator:
                     params:
-                      - 45
+                      - 55
                     type: gt
                   operator:
                     type: and
@@ -111,13 +111,13 @@ groups:
         isPaused: false
         annotations:
           summary: "HDD {{ $labels.device }} temperature warning ({{ $values.A.Value }}°C) on {{ $labels.instance }}"
-          description: "HDD drive {{ $labels.device }} temperature has exceeded 45°C."
+          description: "HDD drive {{ $labels.device }} temperature has exceeded 55°C."
         labels:
-          severity: warning
+          severity: critical
 
       # 3. HDD >50°C
-      - uid: smart_hdd_temp_critical
-        title: HDD Temperature Critical (>50°C)
+      - uid: smart_hdd_temp_warning
+        title: HDD Temperature Warning (>50°C)
         condition: C
         data:
           - refId: A
@@ -168,7 +168,7 @@ groups:
           summary: "CRITICAL: HDD {{ $labels.device }} high temperature ({{ $values.A.Value }}°C) on {{ $labels.instance }}"
           description: "HDD drive {{ $labels.device }} temperature is above 50°C. Immediate airflow/cooling action needed."
         labels:
-          severity: critical
+          severity: warning
 
       # 4. NVMe >60°C
       - uid: smart_nvme_temp_warning
