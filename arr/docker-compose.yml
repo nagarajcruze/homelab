@@ -46,6 +46,7 @@ services:
     volumes:
       - ./bazarr:/config
       - /mnt/tank/movies:/movies
+      - /mnt/tank/series:/series #optional
     ports:
       - 6767:6767
     restart: unless-stopped
