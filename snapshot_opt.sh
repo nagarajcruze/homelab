@@ -11,6 +11,7 @@ SNAPSHOT_DIR="/.snapshots"
 RETENTION_DAYS=30
 LOG_FILE="/var/log/snapshot_opt.log"
 SKIP_BACKUP=false
+FAILED=false
 
 ### ===== REDIRECT ALL OUTPUT TO BOTH TERMINAL AND LOG FILE =====
 exec > >(tee -a "$LOG_FILE") 2>&1
@@ -26,6 +27,9 @@ SNAP_NAME="$SNAPSHOT_DIR/opt_snapshot_$(date +%F_%H-%M)"
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
 
 log() { echo "[$(date '+%F %T')] $*"; }
+
+# Any non-zero exit (including set -e aborts) pings /fail
+trap 'rc=$?; if [ $rc -ne 0 ]; then curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL/fail" || true; fi' EXIT
 
 ### Help Commands
 # restic snapshots
@@ -135,6 +139,7 @@ if [ "$repo_size" -ge 0 ]; then
     elif [ "$data_added" -gt "$available_bytes" ]; then
         log "CRITICAL: Backup would add $(( data_added / 1024 / 1024 )) MB but only $(( available_bytes / 1024 / 1024 )) MB available (80% cap). SKIPPING backup."
         SKIP_BACKUP=true
+        FAILED=true
     else
         log "Dry-run OK: backup will add ~$(( data_added / 1024 / 1024 )) MB, $(( available_bytes / 1024 / 1024 )) MB available."
     fi
@@ -143,15 +148,16 @@ fi
 # Step 3: Actual backup
 if [ "$SKIP_BACKUP" = false ]; then
     log "Starting Restic backup of $SNAP_NAME to $RESTIC_REPOSITORY"
-    PARENT=$(restic snapshots --latest 1 --json | jq -r '.[0].id')
-    if [ -n "$PARENT" ] && [ "$PARENT" != "null" ]; then
-        if restic -r "$RESTIC_REPOSITORY" --password-file "$RESTIC_PASSWORD_FILE" backup "$SNAP_NAME" --parent $PARENT --tag "opt-snapshot"; then
-            log "Restic backup completed successfully"
-        else
-            log "WARNING: Restic backup failed (exit code: $?). Continuing with local cleanup."
-        fi
+    # Snapshot path changes every run, so restic can't auto-pick a parent; use the newest tagged one.
+    PARENT=$(restic -r "$RESTIC_REPOSITORY" --password-file "$RESTIC_PASSWORD_FILE" snapshots --tag "opt-snapshot" --json 2>/dev/null | jq -r 'max_by(.time).id // empty') || PARENT=""
+    if [ -z "$PARENT" ]; then
+        log "WARNING: No parent snapshot found. Running full backup."
+    fi
+    if restic -r "$RESTIC_REPOSITORY" --password-file "$RESTIC_PASSWORD_FILE" backup "$SNAP_NAME" ${PARENT:+--parent "$PARENT"} --tag "opt-snapshot"; then
+        log "Restic backup completed successfully"
     else
-        log "WARNING: No parent snapshot found. Continuing with local cleanup."
+        log "WARNING: Restic backup failed (exit code: $?). Continuing with local cleanup."
+        FAILED=true
     fi
 
     # Remove old remote snapshots, keeping only the last 2
@@ -159,6 +165,7 @@ if [ "$SKIP_BACKUP" = false ]; then
         log "Restic prune completed successfully"
     else
         log "WARNING: Restic prune failed (exit code: $?). Old snapshots may linger on B2."
+        FAILED=true
     fi
 fi
 
@@ -176,12 +183,12 @@ while read -r snap; do
     fi
 done
 
-### Ping after successful backup
-if [ -n "$HEALTHCHECK_URL" ]; then
-    curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
-else
-    log "WARN" "HEALTHCHECK_URL not set. Skipping healthcheck ping."
+### Ping healthcheck (partial failure exits non-zero; EXIT trap pings /fail)
+if [ "$FAILED" = true ]; then
+    log "Backup completed WITH FAILURES (see warnings above)"
+    exit 1
 fi
+curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
 
 ### ===== DONE =====
 log "Backup completed successfully"

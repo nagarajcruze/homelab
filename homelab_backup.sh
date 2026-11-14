@@ -23,6 +23,7 @@ REMOTE_HOMELAB_BORG_REPO="${REMOTE_HOMELAB_BORG_REPO:-}"
 
 ### ===== Healthcheck =====
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
+FAILED=false
 
 ### ===== SERVICES =====
 declare -A SERVICES=(
@@ -96,6 +97,7 @@ cleanup() {
   fi
   if [ $exit_code -ne 0 ]; then
     log "ERROR" "Backup FAILED with exit code $exit_code — temporary staging cleaned up"
+    curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL/fail" || true
   fi
 }
 trap cleanup EXIT
@@ -178,11 +180,14 @@ mkdir -p /twins/photos/immichdb-backup "$STAGING_DIR/immich-db"
 if docker inspect --format='{{.State.Running}}' immich_postgres 2>/dev/null | grep -q true; then
   log "INFO" "Dumping Immich PostgreSQL database (gzip compressed)"
   t=$(timer_start)
-  docker exec immich_postgres pg_dumpall --clean --if-exists --username=postgres | gzip > /twins/photos/immichdb-backup/immich-database.sql.gz
+  # Dump to .tmp first so a failed dump never clobbers the last good one
+  docker exec immich_postgres pg_dumpall --clean --if-exists --username=postgres | gzip > /twins/photos/immichdb-backup/immich-database.sql.gz.tmp
+  mv /twins/photos/immichdb-backup/immich-database.sql.gz.tmp /twins/photos/immichdb-backup/immich-database.sql.gz
   cp /twins/photos/immichdb-backup/immich-database.sql.gz "$STAGING_DIR/immich-db/immich-database.sql.gz"
   log "INFO" "Immich DB dump completed in $(timer_elapsed "$t")"
 else
   log "WARN" "immich_postgres container is not running. Using previous DB dump if available."
+  FAILED=true
   # Copy the last known good dump to staging if it exists
   if [ -f /twins/photos/immichdb-backup/immich-database.sql.gz ]; then
     cp /twins/photos/immichdb-backup/immich-database.sql.gz "$STAGING_DIR/immich-db/immich-database.sql.gz"
@@ -212,14 +217,17 @@ if borg create --stats --compression zstd,6 "$REMOTE_HOMELAB_BORG_REPO"::'{now}'
   log "INFO" "Pruning Remote Borg backup for Homelab Services"
   if ! borg prune --list --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$REMOTE_HOMELAB_BORG_REPO"; then
     log "WARN" "Remote Borg prune for Homelab Services failed. Old archives may linger on BorgBase."
+    FAILED=true
   fi
 
   log "INFO" "Compacting Remote Borg backup for Homelab Services"
   if ! borg compact "$REMOTE_HOMELAB_BORG_REPO"; then
     log "WARN" "Remote Borg for Homelab Services compact failed."
+    FAILED=true
   fi
 else
   log "WARN" "Remote Borg backup for Homelab Services failed after $(timer_elapsed "$t"). Continuing with Immich backup."
+  FAILED=true
 fi
 
 ### ===== 3. IMMICH DB & BORG BACKUP =====
@@ -234,12 +242,12 @@ borg prune --list --keep-weekly=4 --keep-monthly=11 --keep-yearly=1 "$IMMICH_BAC
 log "INFO" "Compacting Local Borg backup for Immich"
 borg compact "$IMMICH_BACKUP_PATH"
 
-### Ping after successful backup
-if [ -n "$HEALTHCHECK_URL" ]; then
-    curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
-else
-    log "WARN" "HEALTHCHECK_URL not set. Skipping healthcheck ping."
+### Ping healthcheck (partial failure exits non-zero; cleanup trap pings /fail)
+if [ "$FAILED" = true ]; then
+    log "ERROR" "Backup completed WITH FAILURES (see WARN lines above)"
+    exit 1
 fi
+curl -sS -m 10 --retry 5 "$HEALTHCHECK_URL" || true
 
 ### ===== DONE =====
 log "Backup completed successfully"
